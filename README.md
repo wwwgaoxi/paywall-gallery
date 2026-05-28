@@ -16,6 +16,8 @@ Open an Issue if you want us to add a specific app: [request an app](https://git
 
 This repository now includes a static gallery layer in `/tmp/workspace/wwwgaoxi/paywall-gallery/gallery` so you can browse screenshots in a card grid instead of raw Markdown tables.
 
+The gallery home now includes featured apps, category-based sections, and dedicated category pages with screenshots shown directly in the page.
+
 To regenerate the gallery from the existing JSON + Markdown dataset:
 
 ```bash
@@ -32,6 +34,12 @@ Then open:
 
 ```txt
 http://127.0.0.1:8123/gallery/index.html
+```
+
+Category directory:
+
+```txt
+http://127.0.0.1:8123/gallery/categories/index.html
 ```
 
 ---

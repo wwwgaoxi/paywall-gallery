@@ -16,6 +16,8 @@
 
 仓库现在新增了一层静态展示站点，位于 `/tmp/workspace/wwwgaoxi/paywall-gallery/gallery`，可以直接用卡片流浏览截图，而不是只看 Markdown 表格。
 
+Gallery 首页现在包含精选应用、按分类拆分的内容区块，以及可直接展示截图的分类页面。
+
 基于现有 JSON + Markdown 数据重新生成 Gallery：
 
 ```bash
@@ -32,6 +34,12 @@ npm run preview:gallery
 
 ```txt
 http://127.0.0.1:8123/gallery/index.html
+```
+
+分类目录页：
+
+```txt
+http://127.0.0.1:8123/gallery/categories/index.html
 ```
 
 ---

@@ -176,6 +176,105 @@ select {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
+.card-grid--featured {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.content-section {
+  margin-bottom: 24px;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.section-heading h2,
+.category-card h3 {
+  margin-bottom: 6px;
+}
+
+.section-heading p,
+.category-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 196, 255, 0.24);
+  background: rgba(124, 196, 255, 0.08);
+  white-space: nowrap;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.category-card {
+  overflow: hidden;
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.category-card__link {
+  display: grid;
+  height: 100%;
+}
+
+.category-card__preview,
+.image-strip {
+  display: grid;
+  gap: 10px;
+}
+
+.category-card__preview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 14px 14px 0;
+}
+
+.category-card__preview img,
+.image-strip img {
+  width: 100%;
+  aspect-ratio: 9 / 13;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
+
+.category-card__body {
+  padding: 16px 18px 18px;
+}
+
+.category-card__meta,
+.topbar__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.category-card__meta {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .app-card {
   display: grid;
   overflow: hidden;
@@ -271,6 +370,10 @@ select {
   border-radius: 18px;
 }
 
+.page-hero--compact {
+  margin-top: 24px;
+}
+
 .back-link,
 .cta-link {
   display: inline-flex;
@@ -286,6 +389,11 @@ select {
 .detail-layout {
   display: grid;
   gap: 20px;
+}
+
+.image-strip {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 24px;
 }
 
 .hero-panel {
@@ -439,7 +547,8 @@ th {
   }
 
   .results-header,
-  .topbar {
+  .topbar,
+  .section-heading {
     flex-direction: column;
     align-items: stretch;
   }

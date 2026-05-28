@@ -12,6 +12,7 @@ ROOT = Path('/tmp/workspace/wwwgaoxi/paywall-gallery')
 DATA_FILE = ROOT / 'data' / 'apps.json'
 GALLERY_DIR = ROOT / 'gallery'
 APPS_DIR = GALLERY_DIR / 'apps'
+CATEGORIES_DIR = GALLERY_DIR / 'categories'
 ASSETS_DIR = GALLERY_DIR / 'assets'
 
 SECTION_RE = re.compile(r'^##\s+(.*)$')
@@ -49,6 +50,10 @@ def format_money(value: int | float | None) -> str:
 
 def slugified_app_filename(record: dict) -> str:
     return f"{record['slug']}-{record['app_id']}.html"
+
+
+def slugify_text(value: str) -> str:
+    return re.sub(r'[^a-z0-9]+', '-', value.lower()).strip('-') or 'category'
 
 
 def split_frontmatter(text: str) -> str:
@@ -148,9 +153,9 @@ def render_badge(text: str) -> str:
     return f'<span class="badge">{escape(text)}</span>'
 
 
-def render_card(record: dict) -> str:
-    image_path = f"../{record['featured_image']}"
-    detail_href = f"apps/{slugified_app_filename(record)}"
+def render_card(record: dict, *, image_prefix: str = '..', detail_prefix: str = '') -> str:
+    image_path = f"{image_prefix}/{record['featured_image']}"
+    detail_href = f"{detail_prefix}apps/{slugified_app_filename(record)}"
     return f"""
         <article class=\"app-card\">
           <a class=\"app-card__image\" href=\"{detail_href}\">
@@ -169,6 +174,145 @@ def render_card(record: dict) -> str:
           </div>
         </article>
     """
+
+
+def render_section_heading(title: str, description: str = '', action_href: str = '', action_label: str = '') -> str:
+    action_markup = (
+        f'<a class="section-link" href="{escape(action_href, quote=True)}">{escape(action_label)}</a>'
+        if action_href and action_label
+        else ''
+    )
+    description_markup = f'<p>{escape(description)}</p>' if description else ''
+    return f"""
+      <div class=\"section-heading\">
+        <div>
+          <h2>{escape(title)}</h2>
+          {description_markup}
+        </div>
+        {action_markup}
+      </div>
+    """
+
+
+def render_category_card(category: dict, *, image_prefix: str = '..', href_prefix: str = 'categories/') -> str:
+    preview_markup = ''.join(
+        f'<img src="{image_prefix}/{image}" alt="{escape(category["name"])} preview {index + 1}" loading="lazy">'
+        for index, image in enumerate(category['preview_images'][:3])
+    )
+    return f"""
+      <article class=\"category-card\">
+        <a class=\"category-card__link\" href=\"{href_prefix}{escape(category['slug'], quote=True)}.html\">
+          <div class=\"category-card__preview\">{preview_markup}</div>
+          <div class=\"category-card__body\">
+            <div class=\"category-card__meta\">
+              <span>{category['app_count']} apps</span>
+              <span>{category['image_count']} images</span>
+            </div>
+            <h3>{escape(category['name'])}</h3>
+            <p>Browse {escape(category['name'])} paywalls with screenshots shown directly in the page.</p>
+          </div>
+        </a>
+      </article>
+    """
+
+
+def render_category_section(category: dict) -> str:
+    cards_markup = ''.join(render_card(app) for app in category['apps'][:4])
+    return f"""
+      <section class=\"content-section\" id=\"category-{escape(category['slug'], quote=True)}\">
+        {render_section_heading(category['name'], f"{category['app_count']} apps · {category['image_count']} preview images", f"categories/{category['slug']}.html", 'View category')}
+        <div class=\"card-grid card-grid--compact\">{cards_markup}</div>
+      </section>
+    """
+
+
+def render_categories_index(categories: list[dict]) -> str:
+    cards_markup = ''.join(render_category_card(category, image_prefix='../..', href_prefix='') for category in categories)
+    return f"""<!doctype html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+    <title>Categories · Paywall Gallery</title>
+    <link rel=\"stylesheet\" href=\"../{BASE_CSS}\">
+  </head>
+  <body>
+    <div class=\"shell\">
+      <header class=\"topbar\">
+        <nav class=\"topbar__nav\">
+          <a class=\"back-link\" href=\"../index.html\">Home</a>
+          <a class=\"back-link\" href=\"../index.html#all-apps\">All apps</a>
+        </nav>
+      </header>
+
+      <section class=\"page-hero page-hero--compact\">
+        <div>
+          <p class=\"eyebrow\">Category directory</p>
+          <h1>Browse screenshots by content group.</h1>
+          <p class=\"hero-copy\">Each category page keeps the screenshots visible while splitting the gallery into easier-to-scan sections.</p>
+        </div>
+        <div class=\"hero-metrics\">
+          <div><span>Categories</span><strong>{len(categories)}</strong></div>
+          <div><span>Total apps</span><strong>{sum(category['app_count'] for category in categories)}</strong></div>
+          <div><span>Total images</span><strong>{sum(category['image_count'] for category in categories)}</strong></div>
+        </div>
+      </section>
+
+      <section class=\"category-grid\">{cards_markup}</section>
+    </div>
+  </body>
+</html>
+"""
+
+
+def render_category_page(category: dict) -> str:
+    apps = category['apps']
+    cards_markup = ''.join(render_card(app, image_prefix='../..', detail_prefix='../') for app in apps)
+    preview_markup = ''.join(
+        f'<img src="../../{image}" alt="{escape(category["name"])} preview {index + 1}" loading="lazy">'
+        for index, image in enumerate(category['preview_images'][:4])
+    )
+    return f"""<!doctype html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+    <title>{escape(category['name'])} · Paywall Gallery</title>
+    <link rel=\"stylesheet\" href=\"../{BASE_CSS}\">
+  </head>
+  <body>
+    <div class=\"shell\">
+      <header class=\"topbar\">
+        <nav class=\"topbar__nav\">
+          <a class=\"back-link\" href=\"../index.html\">Home</a>
+          <a class=\"back-link\" href=\"index.html\">All categories</a>
+          <a class=\"back-link\" href=\"../index.html#all-apps\">All apps</a>
+        </nav>
+        <a class=\"cta-link\" href=\"../index.html#category-{escape(category['slug'], quote=True)}\">Jump to section</a>
+      </header>
+
+      <section class=\"page-hero page-hero--compact\">
+        <div>
+          <p class=\"eyebrow\">Category page</p>
+          <h1>{escape(category['name'])}</h1>
+          <p class=\"hero-copy\">This page groups related paywalls together so screenshots stay visible without mixing every app into one long stream.</p>
+        </div>
+        <div class=\"hero-metrics\">
+          <div><span>Apps</span><strong>{category['app_count']}</strong></div>
+          <div><span>Images</span><strong>{category['image_count']}</strong></div>
+          <div><span>Paywall types</span><strong>{category['type_count']}</strong></div>
+        </div>
+      </section>
+
+      <section class=\"image-strip\">{preview_markup}</section>
+      <section class=\"content-section\">
+        {render_section_heading('Apps in this category', 'Screenshots are shown directly in every card below.')}
+        <div class=\"card-grid\">{cards_markup}</div>
+      </section>
+    </div>
+  </body>
+</html>
+"""
 
 
 def render_table(rows: list[list[str]], columns: Iterable[str]) -> str:
@@ -239,7 +383,11 @@ def render_detail_page(detail: AppDetail) -> str:
   <body class=\"detail-page\">
     <div class=\"shell\">
       <header class=\"topbar\">
-        <a class=\"back-link\" href=\"../index.html\">← Back to gallery</a>
+        <nav class=\"topbar__nav\">
+          <a class=\"back-link\" href=\"../index.html\">Home</a>
+          <a class=\"back-link\" href=\"../categories/{slugify_text(record['category'])}.html\">{escape(record['category'])}</a>
+          <a class=\"back-link\" href=\"../categories/index.html\">All categories</a>
+        </nav>
         <a class=\"cta-link\" href=\"{escape(record['paywallpro_url'])}\" target=\"_blank\" rel=\"noopener noreferrer\">Open on PaywallPro</a>
       </header>
 
@@ -303,10 +451,13 @@ def render_detail_page(detail: AppDetail) -> str:
 """
 
 
-def render_index(apps: list[dict]) -> str:
-    categories = len({app['category'] for app in apps})
+def render_index(apps: list[dict], categories: list[dict]) -> str:
+    category_count = len(categories)
     total_images = sum(app.get('image_count', 0) for app in apps)
     cards_markup = ''.join(render_card(app) for app in apps)
+    featured_cards = ''.join(render_card(app) for app in apps[:6])
+    category_cards = ''.join(render_category_card(category) for category in categories[:8])
+    category_sections = ''.join(render_category_section(category) for category in categories[:6])
     payload = json.dumps(apps, separators=(',', ':'))
 
     return f"""<!doctype html>
@@ -319,6 +470,16 @@ def render_index(apps: list[dict]) -> str:
   </head>
   <body>
     <div class=\"shell\">
+      <header class=\"topbar\">
+        <nav class=\"topbar__nav\">
+          <a class=\"back-link\" href=\"index.html\">Home</a>
+          <a class=\"back-link\" href=\"#featured-apps\">Featured</a>
+          <a class=\"back-link\" href=\"categories/index.html\">Categories</a>
+          <a class=\"back-link\" href=\"#all-apps\">All apps</a>
+        </nav>
+        <a class=\"cta-link\" href=\"categories/index.html\">Browse by category</a>
+      </header>
+
       <header class=\"page-hero\">
         <div>
           <p class=\"eyebrow\">Visual gallery layer</p>
@@ -327,10 +488,26 @@ def render_index(apps: list[dict]) -> str:
         </div>
         <div class=\"hero-metrics\">
           <div><span>Apps</span><strong>{len(apps)}</strong></div>
-          <div><span>Categories</span><strong>{categories}</strong></div>
+          <div><span>Categories</span><strong>{category_count}</strong></div>
           <div><span>Preview images</span><strong>{total_images}</strong></div>
         </div>
       </header>
+
+      <section class=\"content-section\" id=\"featured-apps\">
+        {render_section_heading('Featured apps', 'A visual entry point with screenshots shown directly on the homepage.', '#all-apps', 'See all apps')}
+        <div class=\"card-grid card-grid--featured\">{featured_cards}</div>
+      </section>
+
+      <section class=\"content-section\" id=\"browse-categories\">
+        {render_section_heading('Browse by category', 'Split the dataset into separate content pages while keeping image previews visible.', 'categories/index.html', 'All categories')}
+        <div class=\"category-grid\">{category_cards}</div>
+      </section>
+
+      {category_sections}
+
+      <section class=\"content-section\" id=\"all-apps\">
+        {render_section_heading('All apps', 'Search, filter, and sort the full gallery from one page.')}
+      </section>
 
       <section class=\"toolbar\">
         <label>
@@ -390,6 +567,27 @@ def normalize_app(record: dict) -> dict:
     }
 
 
+def build_category_groups(apps: list[dict]) -> list[dict]:
+    grouped: dict[str, list[dict]] = {}
+    for app in apps:
+        grouped.setdefault(app['category'], []).append(app)
+
+    categories: list[dict] = []
+    for name, category_apps in grouped.items():
+        categories.append({
+            'name': name,
+            'slug': slugify_text(name),
+            'apps': category_apps,
+            'app_count': len(category_apps),
+            'image_count': sum(app.get('image_count', 0) for app in category_apps),
+            'preview_images': [app['featured_image'] for app in category_apps[:4]],
+            'type_count': len({app['paywall_type'] for app in category_apps}),
+        })
+
+    categories.sort(key=lambda category: (-category['app_count'], category['name']))
+    return categories
+
+
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding='utf-8')
@@ -408,18 +606,25 @@ def main() -> None:
 
     apps = [normalize_app(app) for app in raw_apps]
     apps.sort(key=lambda app: (app.get('mrr_usd') or 0), reverse=True)
+    categories = build_category_groups(apps)
 
     if APPS_DIR.exists():
         for old_file in APPS_DIR.glob('*.html'):
             old_file.unlink()
+    if CATEGORIES_DIR.exists():
+        for old_file in CATEGORIES_DIR.glob('*.html'):
+            old_file.unlink()
 
     copy_assets()
-    write_text(GALLERY_DIR / 'index.html', render_index(apps))
+    write_text(GALLERY_DIR / 'index.html', render_index(apps, categories))
+    write_text(CATEGORIES_DIR / 'index.html', render_categories_index(categories))
 
     for app in apps:
         detail = parse_sections(ROOT / app['markdown_path'])
         detail.record = app
         write_text(APPS_DIR / slugified_app_filename(app), render_detail_page(detail))
+    for category in categories:
+        write_text(CATEGORIES_DIR / f"{category['slug']}.html", render_category_page(category))
 
 
 if __name__ == '__main__':
