@@ -4,6 +4,7 @@
   "description": "Static gallery build tooling for the open paywall dataset.",
   "scripts": {
     "build:gallery": "python3 scripts/generate_gallery.py",
+    "preview:gallery": "python3 -m http.server 8123",
     "test": "python3 scripts/generate_gallery.py"
   },
   "repository": {

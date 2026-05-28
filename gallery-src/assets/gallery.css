@@ -387,6 +387,10 @@ th {
   background: rgba(1, 4, 12, 0.9);
 }
 
+.lightbox[hidden] {
+  display: none;
+}
+
 .lightbox__image {
   max-width: min(92vw, 560px);
   max-height: 88vh;
